@@ -1,0 +1,42 @@
+table {
+    border: 1px solid lightgray;    
+}
+
+th,
+td,
+p,
+input {
+    font: 14px Verdana;
+}
+
+table,
+th,
+td {
+    border: solid 1px #DDD;
+    border-collapse: collapse;
+    padding: 2px 3px;
+    text-align: center;
+}
+
+th {
+    font-weight: bold;
+}
+
+th, td{
+    border:1px solid lightgray;
+    padding:5px;
+}
+
+.pg-normal {
+    color: rgb(18, 21, 190);
+    font-weight: normal;
+    text-decoration: none;    
+    cursor: pointer;    
+}
+
+.pg-selected {
+    color: black;
+    font-weight: bold;        
+    text-decoration: underline;
+    cursor: pointer;
+}

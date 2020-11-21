@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Parent Child Mapping</title>
+    <link rel="stylesheet" href="client.css">
+</head>
+
+<body>
+    <input type="button" onclick="CreateTableFromJSON(1)" value="Show Parent Data" />
+    <p id="showData"></p>
+    <div id="pageNavPosition"></div>
+</body>
+
+<script>
+    async function CreateTableFromJSON(pageNum) {
+        var xhttp = new XMLHttpRequest();
+        var parents = [];
+        xhttp.onreadystatechange = async function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // Typical action to be performed when the document is ready:
+                var response = JSON.parse(xhttp.responseText);
+                var totalRecords = response.totalRecords;
+                parents = response.parents;
+
+                // EXTRACT VALUE FOR HTML HEADER. 
+                var col = [];
+
+                for (var i = 0; i < parents.length; i++) {
+                    for (var key in parents[i]) {
+                        if (col.indexOf(key) === -1) {
+                            col.push(key);
+                        }
+                    }
+                }
+
+                // CREATE DYNAMIC TABLE.
+                var table = document.createElement("table");
+                table.id = "pager";
+
+                // CREATE HTML TABLE HEADER ROW USING THE EXTRACTED HEADERS ABOVE.
+
+                var tr = table.insertRow(-1);                   // TABLE ROW.
+
+                for (var i = 0; i < col.length; i++) {
+                    var th = document.createElement("th");      // TABLE HEADER.
+                    th.innerHTML = col[i];
+                    tr.appendChild(th);
+                }
+
+                // ADD JSON DATA TO THE TABLE AS ROWS.
+                for (var i = 0; i < parents.length; i++) {
+                    tr = table.insertRow(-1);
+                    for (var j = 0; j < col.length; j++) {
+                        var tabCell = tr.insertCell(-1);
+                        tabCell.innerHTML = parents[i][col[j]];
+                    }
+                }
+
+                // FINALLY ADD THE NEWLY CREATED TABLE WITH JSON DATA TO A CONTAINER.
+                var divContainer = document.getElementById("showData");
+                divContainer.innerHTML = "";
+                divContainer.appendChild(table);
+
+
+                // Instantiate pagination after data is available    
+                pager = new Pager('pager', Number(response.pageLimit));
+                pager.init(totalRecords);
+                pager.showPageNav('pager', 'pageNavPosition');
+                pager.showPage(pageNum);
+
+                // pagination object codes.
+                function Pager(tableName, itemsPerPage) {
+                    this.tableName = tableName;
+                    this.itemsPerPage = itemsPerPage;
+                    this.currentPage = 1;
+                    this.pages = 0;
+                    this.inited = false;
+
+                    this.showRecords = async function (from, to, pageNumber) {
+                        var rows = await getParents(pageNumber);
+                        // i starts from 1 to skip table header row
+                        for (var i = 1; i < rows.length; i++) {
+                            if (i < from || i > to) rows[i].style.display = 'none';
+                            else rows[i].style.display = '';
+                        }
+                    }
+
+                    async function getParents(pageNum) {
+                        let response = await fetch("http://localhost:3000/parent?page=" + pageNum);
+                        let data = await response.json;
+                        return data.parents;
+                    }
+
+                    this.showPage = function (pageNumber) {
+                        if (!this.inited) {
+                            alert("not inited");
+                            return;
+                        }
+
+                        var oldPageAnchor = document.getElementById('pg' + this.currentPage);
+                        oldPageAnchor.className = 'pg-normal';
+
+                        this.currentPage = pageNumber;
+                        var newPageAnchor = document.getElementById('pg' + this.currentPage);
+                        newPageAnchor.className = 'pg-selected';
+
+                        var from = (pageNumber - 1) * itemsPerPage + 1;
+                        var to = from + itemsPerPage - 1;
+                        this.showRecords(from, to, pageNumber);
+                    }
+
+                    this.prev = function () {
+                        if (this.currentPage > 1) this.showPage(this.currentPage - 1);
+                    }
+
+                    this.next = function () {
+                        if (this.currentPage < this.pages) {
+                            this.showPage(this.currentPage + 1);
+                        }
+                    }
+
+                    this.init = function (totalRecords) {
+                        this.pages = Math.ceil(totalRecords / itemsPerPage);
+                        this.inited = true;
+                    }
+
+                    this.showPageNav = function (pagerName, positionId) {
+                        if (!this.inited) {
+                            alert("not inited");
+                            return;
+                        }
+                        var element = document.getElementById(positionId);
+                        var pagerHtml = '<span onclick="' + pagerName + '.prev();" class="pg-normal"> &#171 Prev </span> | ';
+                        for (var page = 1; page <= this.pages; page++)
+                            pagerHtml += '<span id="pg' + page + '" class="pg-normal" onclick="' + pagerName + '.showPage(' + page + ');">' + page + '</span> | ';
+                        pagerHtml += '<span onclick="' + pagerName + '.next();" class="pg-normal"> Next &#187;</span>';
+                        element.innerHTML = pagerHtml;
+                    }
+                }
+            }
+        };
+        xhttp.open("GET", "http://localhost:3000/parent?page=" + pageNum, true);
+        xhttp.send();
+    }
+</script>
+
+</html>
